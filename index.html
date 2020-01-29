@@ -19,16 +19,18 @@ button {
 	<label for="checkbox-hiragana">平假名</label>
 	<input type="checkbox" id="checkbox-katakana"/>
 	<label for="checkbox-katakana">片假名</label>
+	<input type="checkbox" id="checkbox-youon"/>
+	<label for="checkbox-youon">拗音</label>
 	<input type="checkbox" id="checkbox-kana-roma" checked="true"/>
 	<label for="checkbox-kana-roma">看假名选罗马音</label>
 	<input type="checkbox" id="checkbox-roma-kana"/>
 	<label for="checkbox-roma-kana">看罗马音选假名</label>
-	<input type="checkbox" id="checkbox-youon"/>
-	<label for="checkbox-youon">拗音</label>
+	<input type="checkbox" id="checkbox-"/>
+	<label for="checkbox-youon">填空</label> <!-- 待实现 -->
 </form>
 
 <p id="question"></p>
-<p id="choice"></p>
+<p id="choice" onclick="choose()"></p>
 <p id="message"></p>
 <button id="next" onclick="newQuestion()">next</button>
 
@@ -78,37 +80,53 @@ function $(str, innerHTML) {
 	}
 }
 
-var elemQuestion = $('#question');
-var elemChoice = $('#choice');
-var elemMessage = $('#message');
-var buttonNext = $('#next');
-var checkHiragana = $('#checkbox-hiragana'), checkKatakana = $('#checkbox-katakana'), checkKanaRoma = $('#checkbox-kana-roma'), checkRomaKana = $('#checkbox-roma-kana'), checkYouon = $('#checkbox-youon');
+var elemQuestion = $('#question'),
+	elemChoice = $('#choice'),
+	elemMessage = $('#message'),
+	buttonNext = $('#next'),
+	checkHiragana = $('#checkbox-hiragana'),
+	checkKatakana = $('#checkbox-katakana'),
+	checkKanaRoma = $('#checkbox-kana-roma'),
+	checkRomaKana = $('#checkbox-roma-kana'),
+	checkYouon = $('#checkbox-youon');
 
-var answer, answerStr;
-var correctCnt = parseInt(localStorage['io.github.zmx0142857.abc.correctCnt']) || 0;
-var errorCnt = parseInt(localStorage['io.github.zmx0142857.abc.errorCnt']) || 0;
+var questionStr, answer, answerStr, choice;
+
+var info = {
+	correctCnt: parseInt(localStorage['correctCnt']) || 0,
+	mistakeCnt: parseInt(localStorage['mistakeCnt']) || 0,
+	mistakes: localStorage['mistakes'] || {},
+};
 
 // 在控制台调用 statistics() 查看当前计数
 function statistics() {
-	return 'correct: ' + correctCnt + ', error: ' + errorCnt;
+	return 'correct: ' + info.correctCnt + ', error: ' + info.mistakeCnt;
 }
 
-function choose(n) {
-	return function() {
-		if (n == answer) {
-			++correctCnt;
-			localStorage['io.github.zmx0142857.abc.correctCnt'] = correctCnt;
-			elemMessage.style.color = '#080';
-			elemMessage.innerHTML = 'correct!';
-		} else {
-			++errorCnt;
-			localStorage['io.github.zmx0142857.abc.errorCnt'] = errorCnt;
-			elemMessage.style.color = '#800';
-			elemMessage.innerHTML = 'correct answer: ' + answerStr;
-		}
-		buttonNext.style.display = 'revert';
-		document.onkeydown = onAnswer;
-	};
+function setChoice(n) {
+	return function() { choice = n; };
+}
+
+function choose() {
+	if (choice == answer) {
+		elemMessage.style.color = '#080';
+		elemMessage.innerHTML = 'correct!';
+		++info.correctCnt;
+		localStorage['correctCnt'] = info.correctCnt;
+	} else {
+		elemMessage.style.color = '#800';
+		elemMessage.innerHTML = 'correct answer: ' + answerStr;
+		++info.mistakeCnt;
+		localStorage['mistakeCnt'] = info.mistakeCnt;
+		if (typeof(info.mistakes[questionStr]) == 'undefined')
+			info.mistakes[questionStr] = 1;
+		else
+			++info.mistakes[questionStr];
+		localStorage['mistakes'] = info.mistakes; // 低效
+	}
+	buttonNext.style.display = 'inline';
+	document.onkeydown = onAnswer;
+	elemChoice.onclick = function() {};
 }
 
 function newQuestion() {
@@ -137,8 +155,8 @@ function newQuestion() {
 	else
 		chooseRoma = Math.random() > 0.5 ? true : false;
 
-	var question = chooseRoma ? kana : 0;
-	var choice = chooseRoma ? 0 : kana;
+	var questionIdx = chooseRoma ? kana : 0;
+	var choiceIdx = chooseRoma ? 0 : kana;
 
 	// 产生选项
 	var visited = [];
@@ -147,26 +165,27 @@ function newQuestion() {
 		var i;
 		do
 			i = Math.floor(len*Math.random());
-		while (visited.includes[i]);
+		while (visited.includes(i));
 		visited.push(i);
 
-		var button = $('button', dict[i][choice]);
-		button.onclick = choose(n);
+		var button = $('button', dict[i][choiceIdx]);
+		button.onclick = setChoice(n);
 		frag.appendChild(button);
 		if (n == answer) {
-			elemQuestion.innerHTML = dict[i][question];
-			answerStr = dict[i][choice];
+			questionStr = elemQuestion.innerHTML = dict[i][questionIdx];
+			answerStr = dict[i][choiceIdx];
 		}
 	}
 	elemChoice.appendChild(frag);
 	document.onkeydown = onQuestion;
+	elemChoice.onclick = choose;
 }
 newQuestion();
 
 function onQuestion(e) {
-	var c = e.keyCode - 48;
-	if (1 <= c && c <= 4) {
-		choose(c-1)();
+	choice = e.keyCode - 49;
+	if (0 <= choice && choice <= 3) {
+		choose();
 	}
 }
 
