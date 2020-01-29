@@ -165,7 +165,7 @@ function newQuestion() {
 		var i;
 		do
 			i = Math.floor(len*Math.random());
-		while (visited.includes[i]);
+		while (visited.includes(i));
 		visited.push(i);
 
 		var button = $('button', dict[i][choiceIdx]);
