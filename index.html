@@ -103,6 +103,10 @@ function statistics() {
 	return 'correct: ' + info.correctCnt + ', error: ' + info.mistakeCnt;
 }
 
+function setChoice(n) {
+	return function() { choice = n; };
+}
+
 function choose() {
 	if (choice == answer) {
 		elemMessage.style.color = '#080';
@@ -165,7 +169,7 @@ function newQuestion() {
 		visited.push(i);
 
 		var button = $('button', dict[i][choiceIdx]);
-		button.onclick = function() {choice = n};
+		button.onclick = setChoice(n);
 		frag.appendChild(button);
 		if (n == answer) {
 			questionStr = elemQuestion.innerHTML = dict[i][questionIdx];
